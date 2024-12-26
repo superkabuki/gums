@@ -91,15 +91,13 @@ a@debian:~/gums$
 ```
 ## __gumc (Client) cli__
 ```lua
-usage: gumc [-h] [-i INSTUFF] [-b BYTESIZE] [-v]
+usage: gumc [-h] [-i INSTUFF] 
 
 options:
   -h, --help            show this help message and exit
   -i INSTUFF, --instuff INSTUFF
                         default is 'udp://@235.35.3.5:3535'
-  -b BYTESIZE, --bytesize BYTESIZE
-                        Number of bytes to read. default is to read all.
-  -v, --version         Show version
+
 ```
 
 ### start gumc (Client) cli
@@ -110,9 +108,9 @@ a@debian:~/build/clean/gums$ gumc -i udp://@235.35.3.5:3535 -b 1024
 ### Test gums and gumc together
 * first terminal, start the client, __gumc__
 ```lua
-a@debian:~/build/clean/gums$  gumc -b 5 -i udp://@235.35.3.5:3535
+a@debian:~/build/clean/gums$  gumc -i udp://@235.35.3.5:3535
 ```
-* second terminal,start the sender, gums__ and send a "hello"
+* second terminal,start the sender, gums, and send a "hello"
 ```lua
 a@debian:~/build/clean/gums$ printf 'hello' | gums -a 235.35.3.5:3535
 stream uri: udp://@235.35.3.5:3535
@@ -121,14 +119,7 @@ stream uri: udp://@235.35.3.5:3535
 ```lua
 gumc -i udp://@235.35.3.5:3535 -o output.ts
 ```
-### read 13 bytes from a multicast stream with gumc (Client)
- ```lua
- gumc -i udp://@235.35.3.5:3535 -b 13
- ```
-### read 10000 bytes from a multicast stream with gumc (Client)
- ```lua
-  gumc -i udp://@235.35.3.5:3535 -b 10000
-```
+
 
 ___
 

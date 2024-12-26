@@ -34,7 +34,7 @@ class GumC:
         if self.outstuff != OUTSTUFF:
             self.outstuff = open(self.outstuff, "wb")
         self.total_bytes = 0
-        self.start_time = time.time()
+        self.start_time = None
 
     def _addr_port(self, uri):
         if "udp://@" in uri:
@@ -50,23 +50,38 @@ class GumC:
         """
         return time.time() - self.start_time
 
-    def do(self):
-        active = io.BytesIO()
-        self.start_time = time.time()
+    def mk_sock(self):
+        """
+        mk_sock make multicast socket
+        """
         interface_ip = "0.0.0.0"
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         sock.setsockopt(
             socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, struct.pack("b", 32)
         )
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        if hasattr(socket, "SO_REUSEPORT"):
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        self.double_rcvbuf(sock)
         sock.bind(("", self.port))
         sock.setsockopt(
             socket.SOL_IP,
             socket.IP_ADD_MEMBERSHIP,
             socket.inet_aton(self.addr) + socket.inet_aton(interface_ip),
         )
+        return sock
+
+    def do(self):
+        """
+        do make an mcast socket and read as needed.
+        """
+        active = io.BytesIO()
+        sock = self.mk_sock()
         with self.outstuff as a_file:
             while True:
                 received = sock.recv(DGRAM_SIZE)
+                if not self.start_time:
+                    self.start_time = time.time()
                 self.total_bytes += DGRAM_SIZE
                 active.write(received)
                 self.show_rate()
@@ -74,6 +89,22 @@ class GumC:
                     a_file.write(active.getbuffer())
                     active = io.BytesIO()
             a_file.write(active.getbuffer())
+
+    @staticmethod
+    def double_rcvbuf(sock):
+        """
+        double_rcvbuf doubles socket.SO_RCVBUF
+        until it errors
+        """
+        rcvbuf_size = sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF)
+        print(f"\nReading rcvbuf_size of {rcvbuf_size}", file=sys.stderr)
+        while True:
+            try:
+                rcvbuf_size += rcvbuf_size
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, rcvbuf_size)
+            except:
+                print(f"Setting rcvbuf_size to {rcvbuf_size}\n\n", file=sys.stderr)
+                break
 
     def show_rate(self):
         """
